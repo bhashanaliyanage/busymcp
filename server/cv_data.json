@@ -1,0 +1,105 @@
+{
+    "profile": {
+        "name": "Bhashana Liyanage",
+        "title": "Software Engineer",
+        "summary": "Software Engineer with experience in Java, Kotlin, Spring Boot, Angular, and Android development."
+    },
+    "contact": {
+        "phone": "+94 71 900 85 81",
+        "email": "bhashanaliyanage@gmail.com",
+        "location": "Kotugoda, Sri Lanka"
+    },
+    "experience": [
+        {
+            "role": "Software Engineer",
+            "company": "CeyMusic Publishing, Sri Lanka",
+            "start": "Oct 2023",
+            "end": "Present",
+            "highlights": [
+                "Built JavaFX internal system for catalogue handling, audio ingestions, royalty reporting, and revenue analysis.",
+                "Developed Spring Boot + Angular platform for earnings/payout transparency.",
+                "Partnered with UI/UX & management on requirements and delivery."
+            ]
+        }
+    ],
+    "education": [
+        {
+            "degree": "BSc in Information Technology",
+            "school": "SLIIT, Malabe, Sri Lanka",
+            "start": "Jun 2019",
+            "end": "Jun 2023",
+            "focus": [
+                "Software Engineering",
+                "OOP",
+                "Web"
+            ]
+        }
+    ],
+    "skills": [
+        {
+            "languages": [
+                "Java",
+                "Kotlin",
+                "Python",
+                "JavaScript"
+            ],
+            "frameworks": [
+                "Spring Boot",
+                "Angular",
+                "JavaFX",
+                "Flutter",
+                "React Native"
+            ],
+            "web": [
+                "HTML5",
+                "CSS3",
+                "REST APIs"
+            ],
+            "databases": [
+                "PostgreSQL",
+                "MySQL"
+            ],
+            "tools": [
+                "Git",
+                "Maven"
+            ]
+        }
+    ],
+    "projects": [
+        {
+            "name": "Catalogue Management & Royalty Reporting",
+            "tech": [
+                "Java",
+                "JavaFX",
+                "PostgreSQL"
+            ]
+        },
+        {
+            "name": "User Payout Dashboard",
+            "tech": [
+                "Java",
+                "Spring Boot",
+                "Angular",
+                "PostgreSQL"
+            ]
+        },
+        {
+            "name": "HelaClock (Android widget fork)",
+            "tech": [
+                "Java",
+                "Android SDK"
+            ]
+        },
+        {
+            "name": "Axio (Quick Actions Tool)",
+            "tech": [
+                "Kotlin",
+                "Android SDK"
+            ]
+        }
+    ],
+    "languagesSpoken": [
+        "Sinhala (Native)",
+        "English (Fluent)"
+    ]
+}
