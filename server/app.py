@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, Request
 from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, mcp
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,6 +37,11 @@ async def mcp_entry(request: Request):
     try:
         # parse incoming JSON-RPC request
         data = await request.json()
+
+        # Log the incoming request nicely
+        print("\n=== MCP Request ===")
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        print("==================\n")
 
         # handle it using FastMCP's internal handle method
         response = mcp.handle(data)  # <-- handle() is the correct method
