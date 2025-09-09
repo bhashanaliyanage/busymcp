@@ -55,7 +55,6 @@ async def mcp_entry(request: Request):
 
     except Exception as e:
         # return proper JSON-RPC error if something goes wrong
-        print("MCP endpoint error:", e)
         return {
             "jsonrpc": "2.0",
             "error": {"code": -32603, "message": str(e)},
