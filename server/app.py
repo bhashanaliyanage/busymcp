@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
-from .mcp_server import mcp, ask_cv, AskCvIn, send_email, SendEmailIn
-from mcp.server.stdio import stdio_server
-import asyncio
+import mcp
+from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="MCP CV Server")
@@ -33,9 +32,21 @@ def chat(inp: AskCvIn):
 def email_send(inp: SendEmailIn):
     return send_email(inp).model_dump()
 
-# --- Optional MCP endpoint over HTTP stream ---
 @app.api_route("/mcp", methods=["POST"])
 async def mcp_entry(request: Request):
-    # For now: just confirm it's alive
-    data = await request.json()
-    return {"message": "MCP placeholder", "received": data}
+    try:
+        # Parse incoming JSON-RPC request
+        data = await request.json()
+
+        # Handle it using FastMCP
+        response = mcp.handle_json(data)  # returns proper MCP JSON-RPC response
+
+        return response
+
+    except Exception as e:
+        # Return error in JSON-RPC format if something goes wrong
+        return {
+            "jsonrpc": "2.0",
+            "error": {"code": -32603, "message": str(e)},
+            "id": data.get("id") if isinstance(data, dict) else None,
+        }
