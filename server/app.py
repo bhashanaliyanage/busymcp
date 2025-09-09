@@ -2,7 +2,6 @@ import json
 from fastapi import FastAPI, Request
 from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, mcp
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_mcp import MCPRouter
 
 app = FastAPI(title="MCP CV Server")
 
@@ -21,9 +20,6 @@ async def root():
 @app.get("/healthz")
 async def healthz():
     return {"ok": True, "mcp": True}
-
-# Simple REST shim for CV chat + email
-from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn
 
 @app.post("/chat")
 def chat(inp: AskCvIn):
@@ -55,9 +51,13 @@ async def mcp_entry(request: Request):
         return response
 
     except Exception as e:
-        # return proper JSON-RPC error if something goes wrong
+        id_val = None
+        try:
+            id_val = data.get("id")
+        except:
+            pass
         return {
             "jsonrpc": "2.0",
             "error": {"code": -32603, "message": str(e)},
-            "id": data.get("id") if isinstance(data, dict) else None,
+            "id": id_val,
         }
