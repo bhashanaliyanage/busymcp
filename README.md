@@ -71,7 +71,6 @@ Content-Type: application/json
 ### Requirements
 
 - Python 3.10 or later
-- The `requirements.txt` file is inside the `server` folder
 
 ### Backend Setup
 
@@ -80,7 +79,7 @@ Content-Type: application/json
    ```bash
    python3.10 -m venv .venv
    source .venv/bin/activate
-   pip install -r server/requirements.txt
+   pip install -r requirements.txt
    ```
 
 2. **Run the server:**
