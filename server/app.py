@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
-import mcp
-from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn
+from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, mcp
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="MCP CV Server")
