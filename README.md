@@ -76,12 +76,15 @@ Content-Type: application/json
 ### Backend Setup
 
 1. **Create a virtual environment (Python 3.10+):**
+
    ```bash
    python3.10 -m venv .venv
    source .venv/bin/activate
    pip install -r server/requirements.txt
    ```
+
 2. **Run the server:**
+
    ```bash
    uvicorn server.app:app --reload --port 8000
    ```
@@ -90,10 +93,13 @@ Content-Type: application/json
 
 1. **Create a local environment file:**
    - Inside the `web` folder, create a file named `.env.local` and add:
+
      ```bash
      NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000
      ```
+
 2. **Install and run:**
+
    ```bash
    cd web
    npm install

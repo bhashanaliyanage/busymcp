@@ -1,0 +1,12 @@
+# Python venv
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Other common ignores
+*.log
+.env
