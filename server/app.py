@@ -46,6 +46,11 @@ async def mcp_entry(request: Request):
         # handle it using FastMCP's internal handle method
         response = mcp.handle(data)  # <-- handle() is the correct method
 
+        # Optionally log the response too
+        print("\n=== MCP Response ===")
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+        print("===================\n")
+
         return response
 
     except Exception as e:
