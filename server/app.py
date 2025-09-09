@@ -31,4 +31,21 @@ def chat(inp: AskCvIn):
 def email_send(inp: SendEmailIn):
     return send_email(inp).model_dump()
 
-app.mount("/mcp", mcp)  # FastMCP is itself an ASGI app
+@app.post("/mcp")
+async def mcp_entry(request: Request):
+    try:
+        # parse incoming JSON-RPC request
+        data = await request.json()
+
+        # handle it using FastMCP's internal handle method
+        response = mcp.handle(data)  # <-- handle() is the correct method
+
+        return response
+
+    except Exception as e:
+        # return proper JSON-RPC error if something goes wrong
+        return {
+            "jsonrpc": "2.0",
+            "error": {"code": -32603, "message": str(e)},
+            "id": data.get("id") if isinstance(data, dict) else None,
+        }
