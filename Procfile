@@ -1,1 +1,1 @@
-web: python -m uvicorn server.app:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+web: python -m uvicorn server.app:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips="*" --log-level debug --access-log
