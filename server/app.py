@@ -1,11 +1,13 @@
 import json
 from fastapi import FastAPI, Request
-from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, cv_resource
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse
+from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, cv_resource
 import asyncio
-from fastapi.responses import StreamingResponse
 
 app = FastAPI(title="MCP CV Server")
+
+MCP_PROTOCOL = "2025-03-26"  # current spec version
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def mcp_response(id_, result=None, error=None):
+    body = {"jsonrpc": "2.0", "id": id_}
+    if error is not None:
+        body["error"] = error
+    else:
+        body["result"] = result
+    return JSONResponse(body)
 
 @app.get("/")
 async def root():
@@ -36,122 +45,77 @@ def email_send(inp: SendEmailIn):
     return send_email(inp).model_dump()
 
 
-# ---- Minimal JSON-RPC router for MCP over HTTP ----
 @app.post("/mcp")
-async def mcp_http(request: Request):
-    data = await request.json()
-    rpc_id = data.get("id")
-    method = data.get("method")
-    params = data.get("params", {}) or {}
+async def mcp_rpc(req: Request):
+    payload = await req.json()
+    # Basic JSON-RPC guardrails
+    if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0":
+        return JSONResponse({"jsonrpc":"2.0","id":payload.get("id"),
+                             "error":{"code":-32600,"message":"Invalid Request"}}, status_code=400)
 
-    try:
-        # 1) tools/list
-        if method == "tools/list":
-            result = {
-                "tools": [
-                    {
-                        "name": "ask_cv",
-                        "description": "Ask questions about the CV.",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {"question": {"type": "string"}},
-                            "required": ["question"],
-                        },
+    method = payload.get("method")
+    id_    = payload.get("id")
+    params = payload.get("params") or {}
+
+    # 1) REQUIRED MCP HANDSHAKE
+    if method == "initialize":
+        # You can tailor capabilities to what you actually support
+        server_caps = {
+            "tools": {"listChanged": True},         # server can send tools/list_changed notifications (optional)
+            "resources": {"listChanged": True},     # ditto for resources (optional)
+            # add other caps you truly support (prompts, sampling, logging, etc.)
+        }
+        server_info = {"name": "cv-server", "version": "0.1.0"}
+        return mcp_response(id_, {
+            "protocolVersion": MCP_PROTOCOL,
+            "capabilities": server_caps,
+            "serverInfo": server_info,
+        })
+
+    # 2) After initialize, normal MCP methods:
+    if method == "tools/list":
+        return mcp_response(id_, {
+            "tools": [
+                {
+                    "name": "ask_cv",
+                    "description": "Answer questions about the CV JSON",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {"question": {"type":"string"}},
+                        "required": ["question"],
                     },
-                    {
-                        "name": "send_email",
-                        "description": "Send an email (recipient, subject, body).",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "recipient": {"type": "string"},
-                                "subject": {"type": "string"},
-                                "body": {"type": "string"},
-                            },
-                            "required": ["recipient", "subject", "body"],
-                        },
-                    },
-                ]
-            }
-            return {"jsonrpc": "2.0", "id": rpc_id, "result": result}
-
-        # 2) tools/call
-        if method == "tools/call":
-            name = params.get("name")
-            args = params.get("arguments", {}) or {}
-
-            if name == "ask_cv":
-                out = ask_cv(AskCvIn(**args))
-                # MCP "content" response: text payload
-                return {
-                    "jsonrpc": "2.0",
-                    "id": rpc_id,
-                    "result": {"content": [{"type": "text", "text": out.answer}]},
-                }
-
-            if name == "send_email":
-                out = send_email(SendEmailIn(**args))
-                text = (
-                    "Email sent."
-                    if out.ok
-                    else f"Failed: {out.error or 'unknown error'}"
-                )
-                return {
-                    "jsonrpc": "2.0",
-                    "id": rpc_id,
-                    "result": {"content": [{"type": "text", "text": text}]},
-                }
-
-            # unknown tool
-            return {
-                "jsonrpc": "2.0",
-                "id": rpc_id,
-                "error": {"code": -32601, "message": f"Unknown tool: {name}"},
-            }
-
-        # 3) resources/list
-        if method == "resources/list":
-            return {
-                "jsonrpc": "2.0",
-                "id": rpc_id,
-                "result": {
-                    "resources": [{"uri": "cv:json", "mimeType": "application/json"}]
                 },
-            }
+                {
+                    "name": "send_email",
+                    "description": "Send an email via SMTP",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "recipient":{"type":"string"},
+                            "subject":{"type":"string"},
+                            "body":{"type":"string"},
+                        },
+                        "required": ["recipient","subject","body"],
+                    },
+                },
+            ]
+        })
 
-        # 4) resources/read
-        if method == "resources/read":
-            uri = params.get("uri")
-            if uri != "cv:json":
-                return {
-                    "jsonrpc": "2.0",
-                    "id": rpc_id,
-                    "error": {"code": -32602, "message": f"Unknown resource: {uri}"},
-                }
-            blob = (
-                cv_resource()
-            )  # should return {"mimeType": "...", "text": "..."} or similar
-            # Normalizing to MCP "content" style
-            payload = blob.get("text") or json.dumps(blob)
-            return {
-                "jsonrpc": "2.0",
-                "id": rpc_id,
-                "result": {"content": [{"type": "text", "text": payload}]},
-            }
+    if method == "tools/call":
+        # ... your existing dispatcher for ask_cv / send_email ...
+        # return mcp_response(id_, {"content":[{"type":"text","text": "<result>"}]})
+        ...
 
-        # Unknown method
-        return {
-            "jsonrpc": "2.0",
-            "id": rpc_id,
-            "error": {"code": -32601, "message": f"Unknown method: {method}"},
-        }
+    if method == "resources/list":
+        # ... return your cv:json resource list ...
+        ...
 
-    except Exception as e:
-        return {
-            "jsonrpc": "2.0",
-            "id": rpc_id,
-            "error": {"code": -32603, "message": str(e)},
-        }
+    if method == "resources/read":
+        # ... return {"content":[{"type":"text","text": "<json or text>"}]}
+        ...
+
+    # Unknown method
+    return mcp_response(id_, error={"code": -32601, "message": f"Unknown method: {method}"})
 
 
 # Your existing JSON-RPC dispatcher:

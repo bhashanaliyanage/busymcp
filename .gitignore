@@ -10,3 +10,5 @@ __pycache__/
 # Other common ignores
 *.log
 .env
+server/__pycache__/app.cpython-313.pyc
+server/__pycache__/mcp_server.cpython-313.pyc
