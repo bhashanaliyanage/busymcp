@@ -112,17 +112,33 @@ async def mcp_rpc(req: Request):
 
         try:
             if name == "ask_cv":
-                question = (args.get("question") or "").strip()
-                if not question:
-                    return mcp_response(id_, error={"code": -32602, "message": "ask_cv requires 'question'"})
+                # Import your existing tool implementation
+                from server import mcp_server as mcp_mod
+                ask_cv = mcp_mod.ask_cv
 
-                # call your existing implementation; import at top:
-                # from server.mcp_server import ask_cv
-                result_text = await ask_cv(question) if asyncio.iscoroutinefunction(ask_cv) else ask_cv(question)
+                # 1) If a typed input model exists, prefer it
+                req = None
+                AskCVInput = getattr(mcp_mod, "AskCVInput", None)
+                if AskCVInput:
+                    try:
+                        req = AskCVInput(**args)  # e.g., {"question": "..."}
+                    except Exception:
+                        req = None
 
-                return mcp_response(id_, {
-                    "content": [{"type": "text", "text": str(result_text)}]
-                })
+                # 2) Otherwise, provide dot-access (input.question)
+                if req is None:
+                    req = SimpleNamespace(**args)
+
+                # 3) Call the tool; if it actually expects a string, try that too
+                try:
+                    result = ask_cv(req)
+                except AttributeError:
+                    result = ask_cv(args.get("question", ""))
+
+                if inspect.isawaitable(result):
+                    result = await result
+
+                return mcp_response(id_, {"content": [{"type": "text", "text": str(result)}]})
 
             elif name == "send_email":
                 # from server.emailer import send_email_smtp   (or wherever you implemented it)
