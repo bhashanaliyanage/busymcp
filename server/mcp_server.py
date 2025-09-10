@@ -2,7 +2,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 from rapidfuzz import process, fuzz
 import json, pathlib
-from .emailer import send_email_smtp
+from server.emailer import send_email_smtp
 
 mcp = FastMCP("cv-server")
 
@@ -139,3 +139,6 @@ class SendEmailOut(BaseModel):
 def send_email(inp: SendEmailIn) -> SendEmailOut:
     result = send_email_smtp(inp.recipient, inp.subject, inp.body)
     return SendEmailOut(ok=result.get("ok", False), error=result.get("error"))
+
+if __name__ == "__main__":
+    mcp.run()  # defaults to stdio transport
