@@ -1,9 +1,10 @@
 import json
+import asyncio
+from types import SimpleNamespace
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from .mcp_server import ask_cv, AskCvIn, send_email, SendEmailIn, cv_resource
-import asyncio
 
 app = FastAPI(title="MCP CV Server")
 
