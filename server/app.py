@@ -102,9 +102,52 @@ async def mcp_rpc(req: Request):
         })
 
     if method == "tools/call":
-        # ... your existing dispatcher for ask_cv / send_email ...
-        # return mcp_response(id_, {"content":[{"type":"text","text": "<result>"}]})
-        ...
+        id_ = payload.get("id")
+        params = payload.get("params") or {}
+        name = params.get("name")
+        args = params.get("arguments") or {}
+
+        if not name:
+            return mcp_response(id_, error={"code": -32602, "message": "Invalid params: missing 'name'"})
+
+        try:
+            if name == "ask_cv":
+                question = (args.get("question") or "").strip()
+                if not question:
+                    return mcp_response(id_, error={"code": -32602, "message": "ask_cv requires 'question'"})
+
+                # call your existing implementation; import at top:
+                # from server.mcp_server import ask_cv
+                result_text = await ask_cv(question) if asyncio.iscoroutinefunction(ask_cv) else ask_cv(question)
+
+                return mcp_response(id_, {
+                    "content": [{"type": "text", "text": str(result_text)}]
+                })
+
+            elif name == "send_email":
+                # from server.emailer import send_email_smtp   (or wherever you implemented it)
+                recipient = args.get("recipient")
+                subject   = args.get("subject")
+                body      = args.get("body")
+                if not all([recipient, subject, body]):
+                    return mcp_response(id_, error={"code": -32602, "message": "send_email requires recipient, subject, body"})
+
+                ok = send_email_smtp(recipient, subject, body)  # or await if async
+                msg = "Email sent." if ok else "Email failed."
+                return mcp_response(id_, {
+                    "content": [{"type": "text", "text": msg}]
+                })
+
+            else:
+                return mcp_response(id_, error={"code": -32601, "message": f"Unknown tool: {name}"})
+
+        except Exception as e:
+            # Surface a tool error in MCP shape
+            return mcp_response(id_, {
+                "content": [{"type": "text", "text": f"Tool error: {e}"}],
+                "isError": True
+            })
+    
 
     if method == "resources/list":
         # ... return your cv:json resource list ...
